@@ -68,18 +68,10 @@ async def analyze_news(request: Request, news_text: str = Form(...)):
     return JSONResponse(content=result_data)
 
 # ======================== VIDEO ANALYSIS ========================
-
-# Check if Deepfake models are loaded instead of Whisper
-if models.get("deepfake_model") and models.get("yolo_model"):
-    video_router = app_video.create_video_router(**models)
-    app.include_router(video_router, tags=["Video Analysis"])
-    print("✓ Video analysis router included.")
-else:
-    # Optional: Include it anyway if you want metadata search to work even without Deepfake models
-    # But based on your previous logic, we keep it conditional.
-    print("✗ Video analysis router NOT included (Deepfake/YOLO models failed to load).")
+video_router = app_video.create_video_router()
+app.include_router(video_router, tags=["Video Analysis"])
+print("✓ Video analysis router included (Powered by Modal GPU).")
 
 # ======================== RUN APP ========================
-
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)

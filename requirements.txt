@@ -3,10 +3,7 @@ uvicorn
 torch # PyTorch for transformers
 scikit-learn
 transformers
-tensorflow-cpu
-ultralytics
 yt-dlp
-opencv-python-headless==4.8.1.78
 google-api-python-client
 python-dotenv
 lime
