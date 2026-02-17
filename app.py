@@ -1,6 +1,7 @@
 # app.py (UPDATED)
 
 import joblib
+import os
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +27,8 @@ from routers import app_video
 app = FastAPI(title="CredibilityScan API")
 
 # --- ADD SESSION MIDDLEWARE ---
-app.add_middleware(SessionMiddleware, secret_key="d14cdd028ff805930a8be99c9fc3a161c63f7e41e6e4360db99ba76b03263763")
+# It's recommended to load the secret key from an environment variable for production
+app.add_middleware(SessionMiddleware, secret_key=os.environ.get("SESSION_SECRET_KEY", "d14cdd028ff805930a8be99c9fc3a161c63f7e41e6e4360db99ba76b03263763"))
 # ------------------------------
 
 # --- ADD CORS MIDDLEWARE ---
