@@ -3,10 +3,10 @@ uvicorn
 torch # PyTorch for transformers
 scikit-learn
 transformers
-tensorflow # For MobileNetV2
-ultralytics # For YOLOv8
+tensorflow-cpu==2.15.0
+ultralytics==8.0.222
 yt-dlp
-opencv-python
+opencv-python-headless==4.8.1.78
 google-api-python-client
 python-dotenv
 lime
