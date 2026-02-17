@@ -18,3 +18,8 @@ itsdangerous # For secure token generation (if needed for authentication)
 xgboost # For gradient boosting models (if used, not explicitly mentioned but common in ML)
 spacy # For NLP tasks (if used, not explicitly mentioned but common in ML)
 nltk # For NLP tasks (if used, not explicitly mentioned but common in ML)
+joblib # Added for model persistence
+langid # Added for language detection
+scipy # Added for scientific computing (sparse matrices)
+httpx # Added for async HTTP requests
+pydantic # Added for data validation and settings management
