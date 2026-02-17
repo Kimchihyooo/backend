@@ -9,8 +9,6 @@ import torch
 import spacy
 import joblib
 import numpy as np
-from keras import models
-from ultralytics import YOLO 
 from typing import Dict, List, Union
 from transformers import pipeline, AutoTokenizer, AutoModel, AutoModelForSequenceClassification
 
@@ -77,32 +75,7 @@ class ModelLoader:
             print(f"✗ Error loading Sentiment model: {e}")
             self.load_status["Sentiment Analysis (Multilingual)"] = False
 
-    def load_deepfake_model(self):
-        """Loads the MobileNetV2 Deepfake Classifier"""
-        model_path = "C:/git/FakeNewsApp-with-LimeTagalog-/Models/Deepfake/mobilenetv2_best_model.keras"
-        try:
-            print(f"Loading Deepfake Model from {model_path}...")
-            self.deepfake_model = models.load_model(model_path)
-            print("✓ Deepfake classification model loaded successfully!")
-            self.load_status["Deepfake Classification (Keras)"] = True
-        except Exception as e:
-            print(f"✗ Error loading Deepfake model: {e}")
-            self.load_status["Deepfake Classification (Keras)"] = False
 
-    def load_yolo_model(self):
-        """Loads the YOLOv8 Face Detector"""
-        model_path = "C:/git/FakeNewsApp-with-LimeTagalog-/Models/Deepfake/model.pt"
-        try:
-            print(f"Loading YOLOv8 Face Detector ({model_path})...")
-            self.yolo_model = YOLO(model_path)
-            # Warmup
-            self.yolo_model(np.zeros((640, 640, 3)), verbose=False)
-            print("✓ YOLOv8 face detector loaded successfully!")
-            self.load_status["Face Detection (YOLOv8)"] = True
-        except Exception as e:
-            print(f"✗ Error loading YOLOv8 model: {e}")
-            self.load_status["Face Detection (YOLOv8)"] = False
-    
     def load_english_xgb_model(self):
         """Loads the XGBoost classifier and XLM-RoBERTa Large embedding components"""
         xgb_path = "C:/git/FakeNewsApp-with-LimeTagalog-/Models/TF-IDF_English/credibility_scan_xgb_4096.pkl"
