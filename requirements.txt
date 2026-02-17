@@ -14,3 +14,4 @@ pandas # Often used with scikit-learn
 numpy # Often used with scikit-learn and general ML
 requests # For general HTTP requests, often used in web scraping
 beautifulsoup4 # For web scraping (if used, not explicitly mentioned but common)
+itsdangerous # For secure token generation (if needed for authentication)
