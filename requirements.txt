@@ -3,8 +3,8 @@ uvicorn
 torch # PyTorch for transformers
 scikit-learn
 transformers
-tensorflow-cpu==2.15.0
-ultralytics==8.0.222
+tensorflow-cpu
+ultralytics
 yt-dlp
 opencv-python-headless==4.8.1.78
 google-api-python-client
