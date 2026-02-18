@@ -15,6 +15,7 @@ spacy
 itsdangerous
 nltk
 yt-dlp
+#
 # Direct download for the spaCy model to prevent the "model not found" error
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 # forcing a rebuild for python 3.11
