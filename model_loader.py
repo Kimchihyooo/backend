@@ -43,8 +43,7 @@ class ModelLoader:
         """Load all models and track their status"""
         print("\n" + "="*60 + "\nLOADING ALL MODELS\n" + "="*60 + "\n")
         
-        self.load_deepfake_model()
-        self.load_yolo_model()
+        # WE DELETED THE DEEPFAKE AND YOLO CALLS FROM HERE!
         self.load_english_xgb_model()
         self.load_sentiment_model()
         self.load_bias_models()
