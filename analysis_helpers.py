@@ -14,6 +14,10 @@ from model_loader import get_model_loader
 from GCustomSearch import fetch_supporting_articles
 from stopwords import filipino_stopwords, english_stopwords
 
+# --- CONFIGURATION CONSTANTS ---
+MIN_EVIDENCE_COUNT = 2
+# -------------------------------
+
 # ===================================================================
 # HELPER: Calculate Sentence Scores
 # ===================================================================
@@ -219,25 +223,58 @@ async def analyze_text_content(text: str, models: Dict) -> Dict:
     bias_data = detect_bias(text, lang, models)
     
     # 4. External Search Verification
-    # (Placeholder: Extract a core claim from the first sentence)
-    claim = text.split('.')[0]
-    supporting_articles, _, extracted_claim = await fetch_supporting_articles(claim)
+    # Use the most influential sentence from LIME as the search query if available
+    scored_sentences, parts = calculate_sentence_scores(text, lime_explanation or [])
+    search_query = scored_sentences[0]['sentence'] if scored_sentences else text
+    supporting_articles, _, extracted_claim = await fetch_supporting_articles(search_query)
 
-    # 5. Build Result (Standard format for your frontend)
-    Category_Label = "FAKE" if predicted_label == 1 else "REAL"
-    classification_label = "Likely Fake News" if predicted_label == 1 else "Likely Real News"
+    # Implement Consensus Gate logic
+    search_verdict_local = "UNVERIFIED"
+    search_reason_local = "No evidence found"
+
+    if len(supporting_articles) >= MIN_EVIDENCE_COUNT:
+        search_verdict_local = "VERIFIED"
+        search_reason_local = f"Consensus from {len(supporting_articles)} sources"
+    elif len(supporting_articles) == 1:
+        search_verdict_local = "REJECTED"
+        search_reason_local = "INSUFFICIENT CONSENSUS: Lone Anchor"
+    else: # len(supporting_articles) == 0
+        search_verdict_local = "REJECTED"
+        search_reason_local = "INSUFFICIENT CONSENSUS: No supporting evidence found"
+
+    # 5. Build Result (Standard format for your frontend) - applying new classification logic
+    Category_Label = ""
+    classification_label = ""
+    explanation = ""
+    colors = {}
+
+    if predicted_label == 0:  # Model predicts REAL
+        if search_verdict_local == "VERIFIED":
+            Category_Label = "MOST LIKELY REAL"
+            classification_label = "Likely Real News"
+            explanation = "Detected no common patterns of misinformation, and external sources corroborate the claim."
+            colors = {"text_color": "#166534", "bg_color": "#f0fdf4", "accent_color": "#22c55e"}
+        else: # search_verdict_local is REJECTED or UNVERIFIED
+            Category_Label = "UNCERTAIN"
+            classification_label = "Uncertain Credibility"
+            explanation = "Detected no signs of misinformation, but external sources could not sufficiently corroborate the claim. Further human review is recommended."
+            colors = {"text_color": "#f59e0b", "bg_color": "#fee2e2", "accent_color": "#f59e0b"} # Using amber for caution/uncertainty
+    else:  # predicted_label == 1, Model predicts FAKE
+        if search_verdict_local == "VERIFIED":
+            Category_Label = "MANUAL VERIFICATION"
+            classification_label = "Requires Manual Verification"
+            explanation = "Detected patterns of misinformation, but external sources appear to report the claim. This conflicting information requires careful human review."
+            colors = {"text_color": "#f59e0b", "bg_color": "#fffbeb", "accent_color": "#f59e0b"} # Using amber for manual review
+        else: # search_verdict_local is REJECTED or UNVERIFIED
+            Category_Label = "MOST LIKELY FAKE"
+            classification_label = "Likely Fake News"
+            explanation = "Detected deceptive linguistic patterns, and external sources do not report the claim."
+            colors = {"text_color": "#b91c1c", "bg_color": "#fee2e2", "accent_color": "#ad2d2d"}
+
+
     model_confidence_percent = round(model_confidence * 100, 2)
 
-    # Styling based on verdict
-    if Category_Label == "REAL":
-        colors = {"text_color": "#166534", "bg_color": "#f0fdf4", "accent_color": "#22c55e"}
-        explanation = "The AI found no common patterns of misinformation."
-    else:
-        colors = {"text_color": "#b91c1c", "bg_color": "#fee2e2", "accent_color": "#ad2d2d"}
-        explanation = "The AI detected deceptive linguistic patterns."
-
     # Highlight sentences for UI
-    scored_sentences, parts = calculate_sentence_scores(text, lime_explanation or [])
     sentence_html = generate_sentence_highlight_html(parts, scored_sentences)
 
     return {
@@ -245,12 +282,14 @@ async def analyze_text_content(text: str, models: Dict) -> Dict:
         "score_label": Category_Label,
         "classification_text": classification_label,
         "colors": colors,
-        "supporting_articles": [s.dict() for s in supporting_articles],
+        "supporting_articles": [article.dict() for article in supporting_articles],
         "news_text": text,
         "extracted_claim": extracted_claim,
         "lime_explanation": lime_explanation, 
         "lime_html": sentence_html, 
         "influential_sentences": scored_sentences,
         "bias_data": bias_data,
-        "explanation": explanation
+        "explanation": explanation,
+        "search_verdict": search_verdict_local, # Added this
+        "search_reason": search_reason_local # Added this
     }
