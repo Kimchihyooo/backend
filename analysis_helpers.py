@@ -245,7 +245,7 @@ async def analyze_text_content(text: str, models: Dict) -> Dict:
         "score_label": Category_Label,
         "classification_text": classification_label,
         "colors": colors,
-        "supporting_articles": [], # Map from supporting_articles if needed
+        "supporting_articles": [s.dict() for s in supporting_articles],
         "news_text": text,
         "extracted_claim": extracted_claim,
         "lime_explanation": lime_explanation, 
