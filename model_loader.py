@@ -1,8 +1,7 @@
 """
 Model Loader Module
 Centralized model loading and management for CredibilityScan.
-Refactored: Removed Deepfake, YOLO, and Sentiment pipelines.
-Classification: English XGBoost + XLM-R Large Embeddings.
+Matches training logic: XLM-R Large (Last 4 Layers Concatenated) -> 4096 Dimensions.
 """
 
 import os
@@ -10,7 +9,7 @@ import torch
 import spacy
 import joblib
 import numpy as np
-from typing import Dict, List, Union
+from typing import Dict
 from transformers import AutoTokenizer, AutoModel
 
 class ModelLoader:
@@ -48,23 +47,33 @@ class ModelLoader:
 
     def load_english_xgb_model(self):
         """Loads the XGBoost classifier and XLM-RoBERTa Large embedding components"""
+        # Ensure this matches your file path exactly
         xgb_path = "Models/TF-IDF_English/credibility_scan_xgb_4096.pkl"
         roberta_name = "xlm-roberta-large"
         
         try:
             print("Loading English XGBoost Classifier & XLM-R Large Pipeline...")
+            
+            # Load Spacy for sentence splitting (Crucial for your logic)
+            if not spacy.util.is_package("en_core_web_sm"):
+                spacy.cli.download("en_core_web_sm")
             self.nlp = spacy.load("en_core_web_sm")
+
+            # Load Tokenizer & Model
             self.xlm_tokenizer = AutoTokenizer.from_pretrained(roberta_name)
+            # IMPORTANT: output_hidden_states=True is required for your 4096 logic
             self.xlm_model = AutoModel.from_pretrained(roberta_name, output_hidden_states=True)
             self.xlm_model.to(self.device)
             self.xlm_model.eval()
+            
+            # Load XGBoost
             self.xgb_model = joblib.load(xgb_path)
             
-            print("✓ English XGBoost + XLM-R components loaded successfully!")
-            self.load_status["English Classification (XGBoost + XLM-R)"] = True
+            print("✓ English XGBoost + XLM-R (4096-dim) loaded successfully!")
+            self.load_status["English Classification"] = True
         except Exception as e:
             print(f"✗ Error loading English XGBoost components: {e}")
-            self.load_status["English Classification (XGBoost + XLM-R)"] = False
+            self.load_status["English Classification"] = False
 
     def load_bias_models(self):
         """Loads English Bias Detection models"""
@@ -80,43 +89,70 @@ class ModelLoader:
             print(f"✗ Error loading Bias models: {e}")
             self.load_status["Bias Detection (English)"] = False
 
-    # --- THIS WAS THE MISSING FUNCTION ---
     def article_to_embedding(self, text: str):
         """
-        Converts an input text string into an XLM-R embedding vector.
-        This is used by analysis_helpers.py to prepare data for XGBoost.
+        MATCHES TRAINING NOTEBOOK LOGIC:
+        1. Split article into sentences.
+        2. Embed each sentence by concatenating Last 4 Hidden Layers of XLM-R.
+        3. Mean pool the result to get 4096 dimensions.
         """
         if not text or not self.xlm_tokenizer or not self.xlm_model:
             print("Error: Text is empty or XLM-R model is not loaded.")
-            return None
+            return np.zeros(4096) # Fail safe return
 
         try:
-            # 1. Tokenize
-            inputs = self.xlm_tokenizer(
-                text, 
-                return_tensors="pt", 
-                truncation=True, 
-                padding=True, 
-                max_length=512
-            )
+            # 1. Split into sentences using Spacy
+            doc = self.nlp(text[:100000]) # Truncate massive text to prevent OOM
+            sentences = [sent.text.strip() for sent in doc.sents if len(sent.text.strip()) > 5]
             
-            # 2. Move to GPU/CPU
-            inputs = {key: val.to(self.device) for key, val in inputs.items()}
+            if len(sentences) == 0:
+                # If no valid sentences, assume input is just the raw text
+                sentences = [text]
 
-            # 3. Generate Embeddings (No Gradients needed for inference)
-            with torch.no_grad():
-                outputs = self.xlm_model(**inputs)
+            # Process in batches to avoid OOM on Railway
+            batch_size = 8
+            all_embeddings = []
 
-            # 4. Extract the CLS token (first token) from the last hidden layer
-            # Shape: (1, 1024) for XLM-R Large
-            cls_embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+            for i in range(0, len(sentences), batch_size):
+                batch = sentences[i:i+batch_size]
+                
+                # Tokenize
+                inputs = self.xlm_tokenizer(
+                    batch, 
+                    padding=True, 
+                    truncation=True, 
+                    max_length=256, # Matches your notebook
+                    return_tensors="pt"
+                ).to(self.device)
+
+                # Inference
+                with torch.no_grad():
+                    outputs = self.xlm_model(**inputs)
+
+                # --- 4096 DIMENSION LOGIC ---
+                # Concatenate last 4 hidden layers (1024 * 4 = 4096)
+                hidden_states = outputs.hidden_states
+                last_four = [hidden_states[i] for i in [-1, -2, -3, -4]]
+                concatenated = torch.cat(last_four, dim=-1)
+                
+                # Mean Pooling (Attention Mask applied)
+                mask = inputs["attention_mask"].unsqueeze(-1).expand(concatenated.size()).float()
+                summed = torch.sum(concatenated * mask, 1)
+                counts = torch.clamp(mask.sum(1), min=1e-9)
+                
+                # Result is (Batch_Size, 4096)
+                batch_embeddings = (summed / counts).cpu().numpy()
+                all_embeddings.append(batch_embeddings)
+
+            # Stack all batches and take the mean across all sentences
+            # Final shape: (4096,)
+            final_embedding = np.vstack(all_embeddings).mean(axis=0)
             
-            return cls_embedding
+            return final_embedding
 
         except Exception as e:
             print(f"Error in article_to_embedding: {e}")
-            return None
-    # -------------------------------------
+            return np.zeros(4096) # Return zero vector on failure
 
     def get_all_models(self) -> Dict:
         """Get all loaded models as a dictionary"""
