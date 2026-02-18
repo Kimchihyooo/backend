@@ -9,8 +9,7 @@ python-dotenv
 lime
 pandas # Often used with scikit-learn
 numpy # Often used with scikit-learn and general ML
-requests # For general HTTP requests, often used in web scraping
-beautifulsoup4 # For web scraping (if used, not explicitly mentioned but common)
+requests # For general HTTP requests, often used in web scraping # For web scraping (if used, not explicitly mentioned but common)
 itsdangerous # For secure token generation (if needed for authentication)
 xgboost # For gradient boosting models (if used, not explicitly mentioned but common in ML)
 spacy # For NLP tasks (if used, not explicitly mentioned but common in ML)
@@ -21,5 +20,7 @@ scipy # Added for scientific computing (sparse matrices)
 httpx # Added for async HTTP requests
 pydantic # Added for data validation and settings management
 python-multipart
-# The following line downloads the English model directly from spaCy's repository
+sentencepiece
+protobuf
+# Direct download for the spaCy model
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
