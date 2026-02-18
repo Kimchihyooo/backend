@@ -148,7 +148,7 @@ def get_lime_explanation(text: str, lang: str, models: Dict, predicted_label: in
             text, 
             predict_proba_complex, 
             num_features=50, 
-            num_samples=100, 
+            num_samples=50, 
             labels=[predicted_label]
         )
         return exp.as_list()
