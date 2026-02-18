@@ -80,6 +80,44 @@ class ModelLoader:
             print(f"✗ Error loading Bias models: {e}")
             self.load_status["Bias Detection (English)"] = False
 
+    # --- THIS WAS THE MISSING FUNCTION ---
+    def article_to_embedding(self, text: str):
+        """
+        Converts an input text string into an XLM-R embedding vector.
+        This is used by analysis_helpers.py to prepare data for XGBoost.
+        """
+        if not text or not self.xlm_tokenizer or not self.xlm_model:
+            print("Error: Text is empty or XLM-R model is not loaded.")
+            return None
+
+        try:
+            # 1. Tokenize
+            inputs = self.xlm_tokenizer(
+                text, 
+                return_tensors="pt", 
+                truncation=True, 
+                padding=True, 
+                max_length=512
+            )
+            
+            # 2. Move to GPU/CPU
+            inputs = {key: val.to(self.device) for key, val in inputs.items()}
+
+            # 3. Generate Embeddings (No Gradients needed for inference)
+            with torch.no_grad():
+                outputs = self.xlm_model(**inputs)
+
+            # 4. Extract the CLS token (first token) from the last hidden layer
+            # Shape: (1, 1024) for XLM-R Large
+            cls_embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+            
+            return cls_embedding
+
+        except Exception as e:
+            print(f"Error in article_to_embedding: {e}")
+            return None
+    # -------------------------------------
+
     def get_all_models(self) -> Dict:
         """Get all loaded models as a dictionary"""
         return {
