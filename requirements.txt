@@ -20,3 +20,6 @@ langid # Added for language detection
 scipy # Added for scientific computing (sparse matrices)
 httpx # Added for async HTTP requests
 pydantic # Added for data validation and settings management
+python-multipart
+# The following line downloads the English model directly from spaCy's repository
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
