@@ -1,26 +1,16 @@
-fastapi
-uvicorn
-torch # PyTorch for transformers
-scikit-learn
-transformers
-yt-dlp
-google-api-python-client
-python-dotenv
-lime
-pandas # Often used with scikit-learn
-numpy # Often used with scikit-learn and general ML
-requests # For general HTTP requests, often used in web scraping # For web scraping (if used, not explicitly mentioned but common)
-itsdangerous # For secure token generation (if needed for authentication)
-xgboost # For gradient boosting models (if used, not explicitly mentioned but common in ML)
-spacy # For NLP tasks (if used, not explicitly mentioned but common in ML)
-nltk # For NLP tasks (if used, not explicitly mentioned but common in ML)
-joblib # Added for model persistence
-langid # Added for language detection
-scipy # Added for scientific computing (sparse matrices)
-httpx # Added for async HTTP requests
-pydantic # Added for data validation and settings management
+fastapi[standard]
 python-multipart
+requests
+langid
+lime
+joblib
+torch
+transformers
 sentencepiece
 protobuf
-# Direct download for the spaCy model
+xgboost
+numpy
+scipy
+spacy
+# Direct download for the spaCy model to prevent the "model not found" error
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
