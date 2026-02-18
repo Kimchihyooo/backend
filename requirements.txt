@@ -13,7 +13,7 @@ numpy
 scipy
 spacy
 itsdangerous
-nltk
+nltk>=3.8.1
 yt-dlp
 scikit-learn==1.6.1
 # Direct download for the spaCy model to prevent the "model not found" error
